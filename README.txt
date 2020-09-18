@@ -1,3 +1,48 @@
+#For multipass
+multipass launch 16.04 -n ipq8074C2M2D100 -c 2 -m 2G -d 100G
+#multipass mount $HOME ipq8074C2M2D100
+multipass shell ipq8074C2M2D100
+sudo apt update
+sudo apt -y upgrade
+sudo reboot
+multipass shell ipq8074C2M2D100
+sudo apt -y install gcc g++ binutils \
+ patch bzip2 flex make gettext pkg-config unzip \
+ zlib1g-dev libc6-dev subversion libncurses5-dev gawk sharutils curl \
+ libxml-parser-perl ocaml-nox ocaml ocaml-findlib libpcre3-dev \
+ python-yaml libgl1-mesa-dri libgd-dev multiarch-support lib32ncurses5 lib32z1 libssl-dev \
+ device-tree-compiler u-boot-tools \
+ build-essential gawk git ccache gettext \
+ libssl-dev xsltproc zip python sharutils opam libfdt-dev
+mkdir git
+cd git
+git clone https://github.com/shadow3g/ipq8074
+cd ipq8074/
+cd qsdk/
+./scripts/feeds update -a
+./scripts/feeds install -a -f
+cp -rf qca/configs/qsdk/ipq_premium.config .config
+sed -i "s/TARGET_ipq_ipq806x/TARGET_ipq_ipq807x_64/g" .config
+make defconfig
+sed -i -e "/CONFIG_PACKAGE_qca-wifi-fw-hw5-10.4-asic/d" .config
+cd dl
+#split -b 25M qca-IOT-CNSS_W.QZ.3.0-00104-QZHW4024-1.tar.bz2 QCA.
+cat QCA.?? > qca-IOT-CNSS_W.QZ.3.0-00104-QZHW4024-1.tar.bz2
+cd ..
+make V=s
+cd ..
+cp IPQ8074.ILQ.10.0/common/build/update_common_info.py common/build/update_common_info.py
+cp qsdk/bin/ipq/openwrt* common/build/ipq_x64
+cp -rf qsdk/bin/ipq/dtbs/* common/build/ipq_x64/
+cd common/build
+sed -i "s/os.chdir(ipq_dir)//" update_common_info.py
+sed '/debug/d;/packages/d;/"ipq807x"/d;/t32/d;/ret_prep_32image/d;/Required/d;/nosmmu/d;/os.system(cmd)/d;/skales/d;/os.chdir(ipq_dir)/d' -i update_common_info.py
+sed -i 's/.\/ipq/.\/ipq_x64/g' update_common_info.py
+sed -i 's/.\/ipq_x64_x64/.\/ipq_x64/g' update_common_info.py
+export BLD_ENV_BUILD_ID=E
+python update_common_info.py
+
+
 QSDK supports the premium profile for Linux kernel 4.4.60 support. The QSDK framework is developed using Ubuntu (from version 12.04 to version 16.04) and Debian. However, QSDK
 framework regenerates critical tools required to compile firmware at build time. Thus, the framework is independent from the host environment. Although it is developed using the listed distributions, it is expected to work on others such as Red Hat, Mint, or Fedora.
 
