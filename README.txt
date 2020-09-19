@@ -1,7 +1,8 @@
 #For multipass
 multipass launch 16.04 -n ipq8074C2M2D100 -c 2 -m 2G -d 100G
-#multipass mount $HOME ipq8074C2M2D100
+multipass mount $HOME ipq8074C2M2D100
 multipass shell ipq8074C2M2D100
+
 sudo apt update
 sudo apt -y upgrade
 sudo reboot
@@ -14,6 +15,7 @@ sudo apt -y install gcc g++ binutils \
  device-tree-compiler u-boot-tools \
  build-essential gawk git ccache gettext \
  libssl-dev xsltproc zip python sharutils opam libfdt-dev
+
 mkdir git
 cd git
 git clone https://github.com/shadow3g/ipq8074
@@ -26,10 +28,37 @@ sed -i "s/TARGET_ipq_ipq806x/TARGET_ipq_ipq807x_64/g" .config
 make defconfig
 sed -i -e "/CONFIG_PACKAGE_qca-wifi-fw-hw5-10.4-asic/d" .config
 cd dl
+#cp /home/sarayut/git/qca-IOT-CNSS_W.QZ.3.0-00104-QZHW4024-1.tar.bz2 ./
 #split -b 25M qca-IOT-CNSS_W.QZ.3.0-00104-QZHW4024-1.tar.bz2 QCA.
 cat QCA.?? > qca-IOT-CNSS_W.QZ.3.0-00104-QZHW4024-1.tar.bz2
 cd ..
+
+Premium 32-bit
+cp -rf qca/configs/qsdk/ipq_premium.config .config
+sed -i "s/TARGET_ipq_ipq806x/TARGET_ipq_ipq807x/g" .config
+make defconfig
+sed -i -e "/CONFIG_PACKAGE_qca-wifi-fw-hw5-10.4-asic/d" .config
 make V=s
+
+Premium 64-bit
+cp -rf qca/configs/qsdk/ipq_premium.config .config
+sed -i "s/TARGET_ipq_ipq806x/TARGET_ipq_ipq807x_64/g" .config
+make defconfig
+sed -i -e "/CONFIG_PACKAGE_qca-wifi-fw-hw5-10.4-asic/d" .config
+make V=99
+
+32-bit
+cd ..
+cp IPQ8074.ILQ.10.0/common/build/update_common_info.py common/build/update_common_info.py
+cp qsdk/bin/ipq/openwrt* common/build/ipq
+cp -rf qsdk/bin/ipq/dtbs/* common/build/ipq/
+cd common/build
+sed -i "s/os.chdir(ipq_dir)//" update_common_info.py
+sed '/debug/d;/packages/d;/"ipq807x_64"/d;/t32/d;/ret_prep_64image/d;/Required/d;/skales/d;/nosmmu/d;/os.system(cmd)/d;/os.chdir(ipq_dir)/d' -i update_common_info.py
+export BLD_ENV_BUILD_ID=E
+python update_common_info.py
+
+64-bit
 cd ..
 cp IPQ8074.ILQ.10.0/common/build/update_common_info.py common/build/update_common_info.py
 cp qsdk/bin/ipq/openwrt* common/build/ipq_x64
@@ -41,7 +70,6 @@ sed -i 's/.\/ipq/.\/ipq_x64/g' update_common_info.py
 sed -i 's/.\/ipq_x64_x64/.\/ipq_x64/g' update_common_info.py
 export BLD_ENV_BUILD_ID=E
 python update_common_info.py
-
 
 QSDK supports the premium profile for Linux kernel 4.4.60 support. The QSDK framework is developed using Ubuntu (from version 12.04 to version 16.04) and Debian. However, QSDK
 framework regenerates critical tools required to compile firmware at build time. Thus, the framework is independent from the host environment. Although it is developed using the listed distributions, it is expected to work on others such as Red Hat, Mint, or Fedora.
